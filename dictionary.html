@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartLIB | AI Dictionary</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/dist/css/all.min.css">
+    <style>
+        :root {
+            --primary-dark: #121212;
+            --accent-cyan: #00d1ff;
+            --bg-light: #f8fafc;
+            --text-gray: #4a5568;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: var(--bg-light);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            background-color: var(--primary-dark);
+            padding: 1rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+        }
+
+        .logo { font-size: 1.5rem; font-weight: bold; text-decoration: none; color: white; }
+        .logo span { color: var(--accent-cyan); }
+        nav a { color: white; text-decoration: none; margin-left: 20px; font-size: 0.9rem; }
+        nav a:hover { color: var(--accent-cyan); }
+
+        /* Dictionary Main Container */
+        .dictionary-container {
+            max-width: 700px;
+            margin: 50px auto;
+            width: 90%;
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .search-box input {
+            flex: 1;
+            padding: 15px 25px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-box input:focus {
+            border-color: var(--accent-cyan);
+        }
+
+        .search-btn {
+            background: var(--accent-cyan);
+            color: white;
+            border: none;
+            padding: 0 25px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: opacity 0.3s;
+        }
+
+        .search-btn:hover { opacity: 0.9; }
+
+        .save-btn {
+            background: var(--primary-dark);
+            color: white;
+            border: none;
+            padding: 0 18px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: 0.2s;
+            display: none;
+        }
+        .save-btn:hover { background: #333; }
+
+        /* Result UI */
+        #result-area {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .word-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .word-title h1 { margin: 0; font-size: 2.5rem; color: var(--primary-dark); }
+        .phonetic { color: var(--accent-cyan); font-weight: 500; }
+
+        .meaning-box {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 15px;
+        }
+
+        .part-of-speech {
+            font-style: italic;
+            color: var(--text-gray);
+            font-size: 0.9rem;
+            text-transform: capitalize;
+        }
+
+        .definition {
+            line-height: 1.6;
+            margin: 10px 0;
+            font-size: 1.1rem;
+        }
+
+        .example {
+            color: #718096;
+            border-left: 3px solid var(--accent-cyan);
+            padding-left: 15px;
+            font-size: 0.95rem;
+        }
+
+        /* Saved words section */
+        .saved-section {
+            margin-top: 30px;
+            border-top: 2px solid #f1f5f9;
+            padding-top: 20px;
+        }
+
+        .saved-section h4 {
+            color: var(--primary-dark);
+            margin-bottom: 12px;
+            font-size: 1rem;
+        }
+
+        .saved-word-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 10px 15px;
+            background: #f8fafc;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            border: 1px solid #eee;
+        }
+
+        .saved-word-item .word-name {
+            font-weight: 700;
+            color: var(--accent-cyan);
+            font-size: 0.95rem;
+        }
+
+        .saved-word-item .word-meaning {
+            color: #555;
+            font-size: 0.85rem;
+            margin-top: 2px;
+        }
+
+        .del-btn {
+            background: none;
+            border: none;
+            color: #ff6b6b;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: 0.2s;
+        }
+        .del-btn:hover { background: #fff0f0; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <a href="index.html" class="logo">Smart<span>LIB</span></a>
+    <nav>
+        <a href="index.html">Home</a>
+        <a href="books.html">Books</a>
+        <a href="ai_reader.html">AI Reader</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a id="authLink" href="login.html">Login</a>
+    </nav>
+</header>
+
+<div class="dictionary-container">
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h2 style="margin-bottom: 10px;">Smart AI Dictionary</h2>
+        <p style="color: #718096;">Instantly discover meanings, phonetics, and examples.</p>
+    </div>
+
+    <div class="search-box">
+        <input type="text" id="wordInput" placeholder="Enter a word (e.g. Library, Digital...)" autofocus>
+        <button class="search-btn" onclick="searchWord()">Search</button>
+        <button class="save-btn" id="saveBtn" onclick="saveWord()">
+            <i class="fas fa-bookmark"></i> Save
+        </button>
+    </div>
+
+    <div id="result-area">
+        <div class="word-header">
+            <div class="word-title">
+                <h1 id="displayWord">Word</h1>
+                <span class="phonetic" id="displayPhonetic">/phonetic/</span>
+            </div>
+            <button onclick="playAudio()" style="background: none; border: none; color: var(--accent-cyan); cursor: pointer; font-size: 1.5rem;">
+                <i class="fas fa-volume-up"></i>
+            </button>
+        </div>
+        
+        <div class="meaning-box">
+            <span class="part-of-speech" id="displayPos">noun</span>
+            <p class="definition" id="displayDefinition">The definition will appear here.</p>
+            <p class="example" id="displayExample">"Example sentence goes here."</p>
+        </div>
+    </div>
+
+    <!-- Saved Words Section -->
+    <div class="saved-section" id="savedSection" style="display:none;">
+        <h4><i class="fas fa-bookmark" style="color:var(--accent-cyan);"></i> Your Saved Words</h4>
+        <div id="savedList"></div>
+    </div>
+</div>
+
+<script>
+    const API_BASE = "https://library-backend-1m1a.onrender.com";
+
+    // ── Auth ──
+    const user = JSON.parse(localStorage.getItem("smartlib_user") || "null");
+    const userId = user ? user.id : 1;
+    if (user) {
+        const link = document.getElementById('authLink');
+        link.innerText = user.name || user.email;
+        link.href = "dashboard.html";
+    }
+
+    let currentWordData = null;
+    let audioUrl = null;
+
+    async function searchWord() {
+        const word = document.getElementById('wordInput').value.trim();
+        const resultArea = document.getElementById('result-area');
+        if (!word) return;
+
+        try {
+            const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+            const data = await response.json();
+
+            if (data.title === "No Definitions Found") {
+                alert("Word not found. Try another!");
+                return;
+            }
+
+            // Store for saving
+            currentWordData = data[0];
+            audioUrl = null;
+
+            // Find audio
+            const phonemes = data[0].phonetics || [];
+            const withAudio = phonemes.find(p => p.audio);
+            if (withAudio) audioUrl = withAudio.audio;
+
+            // Populate fields
+            document.getElementById('displayWord').innerText    = data[0].word;
+            document.getElementById('displayPhonetic').innerText = data[0].phonetic || (phonemes[0] && phonemes[0].text) || "";
+            document.getElementById('displayPos').innerText      = data[0].meanings[0].partOfSpeech;
+            document.getElementById('displayDefinition').innerText = data[0].meanings[0].definitions[0].definition;
+
+            const example   = data[0].meanings[0].definitions[0].example;
+            const exampleEl = document.getElementById('displayExample');
+            if (example) {
+                exampleEl.innerText    = `"${example}"`;
+                exampleEl.style.display = "block";
+            } else {
+                exampleEl.style.display = "none";
+            }
+
+            resultArea.style.display           = 'block';
+            document.getElementById('saveBtn').style.display = 'block';
+        } catch (error) {
+            console.error("Error fetching word:", error);
+            alert("Could not find that word. Please try another.");
+        }
+    }
+
+    function playAudio() {
+        if (audioUrl) {
+            new Audio(audioUrl).play();
+        } else if ('speechSynthesis' in window) {
+            const word = document.getElementById('displayWord').innerText;
+            const utter = new SpeechSynthesisUtterance(word);
+            window.speechSynthesis.speak(utter);
+        }
+    }
+
+    // ── Save word to backend — POST /dictionary ──
+    async function saveWord() {
+        if (!currentWordData) return;
+        const word    = currentWordData.word;
+        const meaning = currentWordData.meanings[0].definitions[0].definition;
+        const example = currentWordData.meanings[0].definitions[0].example || "";
+
+        try {
+            await fetch(`${API_BASE}/dictionary`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, word, meaning, example })
+            });
+            document.getElementById('saveBtn').innerText = '✓ Saved!';
+            document.getElementById('saveBtn').disabled = true;
+            setTimeout(() => {
+                document.getElementById('saveBtn').innerHTML = '<i class="fas fa-bookmark"></i> Save';
+                document.getElementById('saveBtn').disabled = false;
+            }, 2000);
+            loadSavedWords();
+        } catch (err) {
+            console.error("Save error:", err);
+        }
+    }
+
+    // ── Load saved words — GET /dictionary/:userId ──
+    async function loadSavedWords() {
+        try {
+            const words = await fetch(`${API_BASE}/dictionary/${userId}`).then(r => r.json());
+            const section = document.getElementById('savedSection');
+            const list    = document.getElementById('savedList');
+
+            if (Array.isArray(words) && words.length > 0) {
+                section.style.display = 'block';
+                list.innerHTML = words.map(w => `
+                    <div class="saved-word-item">
+                        <div>
+                            <div class="word-name">${w.word}</div>
+                            <div class="word-meaning">${(w.meaning || '').substring(0, 80)}${(w.meaning || '').length > 80 ? '...' : ''}</div>
+                        </div>
+                        <button class="del-btn" onclick="deleteWord(${w.id})" title="Remove">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                `).join('');
+            } else {
+                section.style.display = 'none';
+            }
+        } catch {}
+    }
+
+    // ── Delete word — DELETE /dictionary/:id ──
+    async function deleteWord(id) {
+        try {
+            await fetch(`${API_BASE}/dictionary/${id}`, { method: 'DELETE' });
+            loadSavedWords();
+        } catch (err) {
+            console.error("Delete error:", err);
+        }
+    }
+
+    // Enter key support
+    document.getElementById('wordInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') searchWord();
+    });
+
+    // Load saved words on page open
+    loadSavedWords();
+</script>
+
+</body>
+</html>

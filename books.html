@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartLIB | All Books</title>
+
+<style>
+:root {
+    --primary-bg: #121212;
+    --secondary-bg: #f4f7f6;
+    --accent-cyan: #00d1ff;
+    --text-main: #333;
+    --card-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--secondary-bg);
+    color: var(--text-main);
+}
+
+/* HEADER */
+header {
+    background-color: var(--primary-bg);
+    padding: 1rem 5%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: white;
+    text-decoration: none;
+}
+
+.logo span {
+    color: var(--accent-cyan);
+}
+
+.search-bar {
+    flex-grow: 0.5;
+    margin: 0 2rem;
+    padding: 8px 15px;
+    border-radius: 20px;
+    border: none;
+    outline: none;
+}
+
+nav a {
+    color: white;
+    text-decoration: none;
+    margin-left: 20px;
+    font-size: 0.95rem;
+    transition: 0.2s;
+}
+
+nav a:hover {
+    color: var(--accent-cyan);
+}
+
+/* CONTAINER */
+.container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 20px;
+}
+
+.section-title {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+    border-left: 5px solid var(--accent-cyan);
+    padding-left: 15px;
+}
+
+/* Status bar */
+#statusBar {
+    text-align: center;
+    padding: 12px;
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 10px;
+}
+
+/* BOOK GRID */
+.books-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 25px;
+}
+
+.book-card {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: var(--card-shadow);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+}
+
+.book-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.book-cover {
+    width: 100%;
+    height: 260px;
+    object-fit: cover;
+    background-color: #ddd;
+}
+
+.book-info {
+    padding: 12px;
+    flex-grow: 1;
+}
+
+.book-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0 0 5px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.book-author {
+    font-size: 0.8rem;
+    color: #777;
+    margin-bottom: 10px;
+}
+
+.book-tag {
+    background: rgba(0, 209, 255, 0.1);
+    color: #008eb0;
+    font-size: 0.7rem;
+    padding: 3px 8px;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+/* Skeleton loader */
+.skeleton {
+    background: linear-gradient(90deg, #eee 25%, #f5f5f5 50%, #eee 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 8px;
+}
+
+@keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <a href="index.html" class="logo">Smart<span>LIB</span></a>
+    <input type="text" class="search-bar" id="searchInput" placeholder="Search books...">
+    <nav>
+        <a href="ai_reader.html">AI Reader</a>
+        <a id="authLink" href="login.html">Login</a>
+    </nav>
+</header>
+
+<div class="container">
+    <h2 class="section-title">Explore Library</h2>
+    <div id="statusBar">Loading books from library...</div>
+    <div class="books-grid" id="bookContainer"></div>
+</div>
+
+<script>
+const API_BASE = "https://library-backend-1m1a.onrender.com";
+const FALLBACK_COVER = "https://covers.openlibrary.org/b/id/10521267-L.jpg";
+
+// ── Auth link ──
+const user = JSON.parse(localStorage.getItem("smartlib_user") || "null");
+if (user) {
+    const link = document.getElementById('authLink');
+    link.innerText = user.name || user.email;
+    link.href = "dashboard.html";
+}
+
+// ── Static fallback books (shown if backend is empty) ──
+const STATIC_BOOKS = [
+  {title:"Clean Code", author:"Robert C. Martin", tag:"Programming", cover:"https://covers.openlibrary.org/b/isbn/9780132350884-L.jpg"},
+  {title:"The Pragmatic Programmer", author:"Andrew Hunt & David Thomas", tag:"Programming", cover:"https://covers.openlibrary.org/b/isbn/9780201616224-L.jpg"},
+  {title:"Introduction to Algorithms", author:"Cormen et al.", tag:"Algorithms", cover:"https://covers.openlibrary.org/b/isbn/9780262033848-L.jpg"},
+  {title:"Design Patterns", author:"Erich Gamma et al.", tag:"Software Design", cover:"https://covers.openlibrary.org/b/isbn/9780201633610-L.jpg"},
+  {title:"Eloquent JavaScript", author:"Marijn Haverbeke", tag:"JavaScript", cover:"https://covers.openlibrary.org/b/isbn/9781593279509-L.jpg"},
+  {title:"Java Complete Reference", author:"Herbert Schildt", tag:"Java", cover:"https://covers.openlibrary.org/b/isbn/9781260440232-L.jpg"},
+  {title:"Effective Java", author:"Joshua Bloch", tag:"Java", cover:"https://covers.openlibrary.org/b/isbn/9780134685991-L.jpg"},
+  {title:"Head First Java", author:"Kathy Sierra", tag:"Java", cover:"https://covers.openlibrary.org/b/isbn/9780596009205-L.jpg"},
+  {title:"Python Crash Course", author:"Eric Matthes", tag:"Python", cover:"https://covers.openlibrary.org/b/isbn/9781593276034-L.jpg"},
+  {title:"Automate the Boring Stuff", author:"Al Sweigart", tag:"Python", cover:"https://covers.openlibrary.org/b/isbn/9781593275990-L.jpg"},
+  {title:"Fluent Python", author:"Luciano Ramalho", tag:"Python", cover:"https://covers.openlibrary.org/b/isbn/9781491946008-L.jpg"},
+  {title:"Deep Learning", author:"Ian Goodfellow", tag:"AI", cover:"https://covers.openlibrary.org/b/isbn/9780262035613-L.jpg"},
+  {title:"Hands-On Machine Learning", author:"Aurelien Geron", tag:"AI", cover:"https://covers.openlibrary.org/b/isbn/9781492032649-L.jpg"},
+  {title:"AI: Modern Approach", author:"Russell & Norvig", tag:"AI", cover:"https://covers.openlibrary.org/b/isbn/9780136042594-L.jpg"},
+  {title:"Computer Networks", author:"Tanenbaum", tag:"Networking", cover:"https://covers.openlibrary.org/b/isbn/9780132126953-L.jpg"},
+  {title:"Operating System Concepts", author:"Silberschatz", tag:"OS", cover:"https://covers.openlibrary.org/b/isbn/9781118063330-L.jpg"},
+  {title:"Database System Concepts", author:"Korth", tag:"Database", cover:"https://covers.openlibrary.org/b/isbn/9780073523323-L.jpg"},
+  {title:"SQL in 10 Minutes", author:"Ben Forta", tag:"Database", cover:"https://covers.openlibrary.org/b/isbn/9780135182796-L.jpg"},
+  {title:"Learning React", author:"Alex Banks", tag:"Web Dev", cover:"https://covers.openlibrary.org/b/isbn/9781492051725-L.jpg"},
+  {title:"HTML & CSS", author:"Jon Duckett", tag:"Web Dev", cover:"https://covers.openlibrary.org/b/isbn/9781118008188-L.jpg"},
+  {title:"JavaScript: The Good Parts", author:"Douglas Crockford", tag:"JavaScript", cover:"https://covers.openlibrary.org/b/isbn/9780596517748-L.jpg"},
+  {title:"Grokking Algorithms", author:"Aditya Bhargava", tag:"Algorithms", cover:"https://covers.openlibrary.org/b/isbn/9781617292231-L.jpg"},
+  {title:"Linux Command Line", author:"William Shotts", tag:"Linux", cover:"https://covers.openlibrary.org/b/isbn/9781593273897-L.jpg"},
+  {title:"Docker Deep Dive", author:"Nigel Poulton", tag:"DevOps", cover:"https://covers.openlibrary.org/b/isbn/9781521822807-L.jpg"},
+  {title:"Kubernetes Up & Running", author:"Brendan Burns", tag:"DevOps", cover:"https://covers.openlibrary.org/b/isbn/9781492046530-L.jpg"},
+  {title:"Cybersecurity Essentials", author:"Charles Brooks", tag:"Security", cover:"https://covers.openlibrary.org/b/isbn/9781119362395-L.jpg"},
+  {title:"Refactoring", author:"Martin Fowler", tag:"Software Engineering", cover:"https://covers.openlibrary.org/b/isbn/9780134757599-L.jpg"},
+  {title:"Code Complete", author:"Steve McConnell", tag:"Programming", cover:"https://covers.openlibrary.org/b/isbn/9780735619678-L.jpg"},
+  {title:"SICP", author:"Abelson & Sussman", tag:"CS Fundamentals", cover:"https://covers.openlibrary.org/b/isbn/9780262510875-L.jpg"},
+  {title:"Compilers", author:"Aho et al.", tag:"Compilers", cover:"https://covers.openlibrary.org/b/isbn/9780321486813-L.jpg"},
+  {title:"Pattern Recognition and ML", author:"Christopher Bishop", tag:"AI", cover:"https://covers.openlibrary.org/b/isbn/9780387310732-L.jpg"},
+  {title:"Site Reliability Engineering", author:"Google", tag:"DevOps", cover:"https://covers.openlibrary.org/b/isbn/9781491929124-L.jpg"},
+  {title:"Modern Operating Systems", author:"Tanenbaum", tag:"OS", cover:"https://covers.openlibrary.org/b/isbn/9780133591620-L.jpg"},
+  {title:"Linux Kernel Development", author:"Robert Love", tag:"Linux", cover:"https://covers.openlibrary.org/b/isbn/9780672329463-L.jpg"},
+];
+
+let allBooks = [];
+
+function normalizeBook(b) {
+    return {
+        title:  b.title  || b.name  || "Untitled",
+        author: b.author || b.authors || "",
+        tag:    b.tag    || b.genre  || b.category || "General",
+        cover:  b.cover  || b.coverImage || b.image || FALLBACK_COVER
+    };
+}
+
+function displayBooks(list) {
+    const container = document.getElementById('bookContainer');
+    container.innerHTML = '';
+    list.forEach(book => {
+        const card = document.createElement('div');
+        card.className = 'book-card';
+        card.innerHTML = `
+            <img src="${book.cover}" class="book-cover" onerror="this.src='${FALLBACK_COVER}'">
+            <div class="book-info">
+                <p class="book-title">${book.title}</p>
+                <p class="book-author">${book.author}</p>
+                <span class="book-tag">${book.tag}</span>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+// ── Load books from backend, fallback to static ──
+async function loadBooks() {
+    try {
+        const data = await fetch(`${API_BASE}/books`).then(r => r.json());
+        if (Array.isArray(data) && data.length > 0) {
+            allBooks = data.map(normalizeBook);
+            document.getElementById('statusBar').innerText = `${allBooks.length} books found in library`;
+        } else {
+            throw new Error("empty");
+        }
+    } catch {
+        allBooks = STATIC_BOOKS;
+        document.getElementById('statusBar').innerText = `Showing ${allBooks.length} books`;
+    }
+    displayBooks(allBooks);
+}
+
+// ── Search filter ──
+document.getElementById('searchInput').addEventListener('keyup', () => {
+    const val = document.getElementById('searchInput').value.toLowerCase();
+    const filtered = allBooks.filter(b =>
+        b.title.toLowerCase().includes(val) ||
+        b.author.toLowerCase().includes(val) ||
+        b.tag.toLowerCase().includes(val)
+    );
+    displayBooks(filtered);
+    document.getElementById('statusBar').innerText = `${filtered.length} result(s)`;
+});
+
+loadBooks();
+</script>
+
+</body>
+</html>

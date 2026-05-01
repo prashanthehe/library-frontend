@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SmartLIB - AI Smart Library</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<header class="navbar">
+  <div class="logo">Smart<span>LIB</span></div>
+  <input type="text" id="heroSearch" placeholder="Search books, authors, topics..." oninput="filterBooks()">
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="books.html">Books</a>
+    <a href="ai_reader.html">AI Reader</a>
+    <a href="dictionary.html">Dictionary</a>
+    <a id="authLink" href="login.html">Login</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="hero-content">
+    <h1>Smart AI-Based Digital Library</h1>
+    <p>Read • Learn • Summarize • Discover</p>
+    <button onclick="window.location.href='books.html'">Explore Library</button>
+  </div>
+</section>
+
+<!-- Popular Books — loaded from backend -->
+<section class="section">
+  <h2>Popular Books</h2>
+  <div class="book-grid" id="popularBooks">
+    <!-- Skeleton placeholders while loading -->
+    <div class="book-card"><div style="height:200px;background:#eee;border-radius:8px;"></div><h4 style="margin-top:8px;color:#ccc;">Loading...</h4></div>
+    <div class="book-card"><div style="height:200px;background:#eee;border-radius:8px;"></div><h4 style="margin-top:8px;color:#ccc;">Loading...</h4></div>
+    <div class="book-card"><div style="height:200px;background:#eee;border-radius:8px;"></div><h4 style="margin-top:8px;color:#ccc;">Loading...</h4></div>
+  </div>
+</section>
+
+<!-- AI FEATURES -->
+<section class="ai-section">
+  <h2>AI Smart Features</h2>
+  <div class="ai-grid">
+    <div class="ai-box" onclick="window.location.href='dashboard.html'" style="cursor:pointer;">📚 AI Book Recommendation</div>
+    <div class="ai-box" onclick="window.location.href='dictionary.html'" style="cursor:pointer;">🧠 Personalized Dictionary</div>
+    <div class="ai-box" onclick="window.location.href='ai_reader.html'" style="cursor:pointer;">💬 Chat with Book</div>
+    <div class="ai-box" onclick="window.location.href='ai_reader.html'" style="cursor:pointer;">📝 Auto Summary</div>
+    <div class="ai-box" onclick="window.location.href='ai_reader.html'" style="cursor:pointer;">🎧 Text to Speech</div>
+    <div class="ai-box" onclick="window.location.href='dashboard.html'" style="cursor:pointer;">📊 Reading Analytics</div>
+  </div>
+</section>
+
+<!-- DIGITAL READER -->
+<section class="reader">
+  <h2>Digital Reading Panel</h2>
+  <div class="reader-box">
+    <p id="readerText">
+      Artificial Intelligence is the simulation of human intelligence in machines.
+    </p>
+    <button onclick="window.location.href='ai_reader.html'">Explain with AI</button>
+  </div>
+</section>
+
+<!-- DICTIONARY -->
+<section class="dictionary">
+  <h2>Personalized Dictionary</h2>
+  <input id="word" placeholder="Enter word">
+  <button onclick="lookup()">Lookup</button>
+  <p id="meaning"></p>
+</section>
+
+<!-- AI BOOK RECOMMENDATION system -->
+<section class="recommended">
+  <h2>AI Book Recommendation</h2>
+  <input type="text" id="interest" placeholder="Enter your interest (e.g. AI, Fiction)">
+  <button onclick="Recommend()">Recommend</button>
+  <div id="result"></div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2026 SmartLIB | AI Smart Library System</p>
+</footer>
+
+<script>
+  const API_BASE = "https://library-backend-1m1a.onrender.com";
+  const FALLBACK_COVER = "https://covers.openlibrary.org/b/id/10521267-L.jpg";
+
+  // ── Auth link update ──
+  const user = JSON.parse(localStorage.getItem("smartlib_user") || "null");
+  if (user) {
+    const link = document.getElementById('authLink');
+    link.innerText = user.name || user.email;
+    link.href = "dashboard.html";
+  }
+
+  // ── Load popular books from backend ──
+  async function loadPopularBooks() {
+    try {
+      const books = await fetch(`${API_BASE}/books`).then(r => r.json());
+      const container = document.getElementById('popularBooks');
+      container.innerHTML = '';
+      const display = Array.isArray(books) ? books.slice(0, 3) : [];
+
+      if (display.length === 0) {
+        // Fallback to static if backend empty
+        container.innerHTML = `
+          <div class="book-card"><img src="https://covers.openlibrary.org/b/id/10521267-L.jpg"><h4>Data Structures</h4><p>₹299</p></div>
+          <div class="book-card"><img src="https://covers.openlibrary.org/b/id/10909258-L.jpg"><h4>AI Basics</h4><p>₹349</p></div>
+          <div class="book-card"><img src="https://covers.openlibrary.org/b/id/11153230-L.jpg"><h4>Spring Boot</h4><p>₹399</p></div>
+        `;
+        return;
+      }
+
+      display.forEach(book => {
+        const card = document.createElement('div');
+        card.className = 'book-card';
+        card.innerHTML = `
+          <img src="${book.cover || book.coverImage || FALLBACK_COVER}" onerror="this.src='${FALLBACK_COVER}'">
+          <h4>${book.title || book.name}</h4>
+          <p>${book.price ? '₹' + book.price : ''}</p>
+        `;
+        container.appendChild(card);
+      });
+    } catch (err) {
+      // Graceful fallback to static books
+      document.getElementById('popularBooks').innerHTML = `
+        <div class="book-card"><img src="https://covers.openlibrary.org/b/id/10521267-L.jpg"><h4>Data Structures</h4><p>₹299</p></div>
+        <div class="book-card"><img src="https://covers.openlibrary.org/b/id/10909258-L.jpg"><h4>AI Basics</h4><p>₹349</p></div>
+        <div class="book-card"><img src="https://covers.openlibrary.org/b/id/11153230-L.jpg"><h4>Spring Boot</h4><p>₹399</p></div>
+      `;
+    }
+  }
+
+  // ── Dictionary lookup ──
+  async function lookup() {
+    let word = document.getElementById("word").value;
+    if (!word) { document.getElementById("meaning").innerText = "Please enter a word"; return; }
+    try {
+      let response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+      let data = await response.json();
+      document.getElementById("meaning").innerText = data[0].meanings[0].definitions[0].definition;
+    } catch {
+      document.getElementById("meaning").innerText = "Word not found!";
+    }
+  }
+
+  // ── AI Recommendation — calls backend, falls back to keyword logic ──
+  async function Recommend() {
+    const interest = document.getElementById("interest").value.toLowerCase().trim();
+    const resultEl = document.getElementById("result");
+    if (!interest) return;
+
+    resultEl.innerText = "Finding recommendations...";
+
+    try {
+      const userId = user ? user.id : 1;
+      const data = await fetch(`${API_BASE}/recommend/${userId}`).then(r => r.json());
+
+      // Backend returns recommendations — display them
+      if (Array.isArray(data) && data.length > 0) {
+        resultEl.innerHTML = data.map(b =>
+          `<span style="display:inline-block;margin:4px 8px;padding:5px 12px;background:#00e0ff22;border-radius:20px;font-size:0.9rem;">${b.title || b}</span>`
+        ).join('');
+      } else {
+        throw new Error("empty");
+      }
+    } catch {
+      // Keyword fallback
+      let result = "";
+      if (interest.includes("python"))      result = "Python Crash Course, Fluent Python";
+      else if (interest.includes("ai"))     result = "AI Basics, Deep Learning Intro";
+      else if (interest.includes("java"))   result = "Java Complete Reference, Effective Java";
+      else if (interest.includes("web"))    result = "Learning React, HTML & CSS by Jon Duckett";
+      else                                  result = "Try Popular Books: DSA, Java, AI Basics";
+      resultEl.innerText = result;
+    }
+  }
+
+  loadPopularBooks();
+</script>
+
+<script src="script.js"></script>
+</body>
+</html>

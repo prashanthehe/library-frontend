@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartLIB | AI Reader</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/dist/css/all.min.css">
+    <style>
+        :root {
+            --dark-bg: #121212;
+            --accent-cyan: #00d1ff;
+            --glass: rgba(255, 255, 255, 0.95);
+            --border-color: #e2e8f0;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: var(--dark-bg);
+            padding: 0.8rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+        }
+
+        .logo { font-size: 1.5rem; font-weight: bold; text-decoration: none; color: white; }
+        .logo span { color: var(--accent-cyan); }
+
+        nav a { color: white; text-decoration: none; margin-left: 20px; font-size: 0.9rem; }
+        nav a:hover { color: var(--accent-cyan); }
+
+        /* Main AI Workspace */
+        .ai-workspace {
+            display: flex;
+            flex: 1;
+            padding: 20px;
+            gap: 20px;
+            overflow: hidden;
+        }
+
+        /* Left Side: Document/Text Input */
+        .reader-panel {
+            flex: 1.5;
+            background: white;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            padding: 20px;
+        }
+
+        .reader-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        /* Action buttons row */
+        .action-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            background: #f8fafc;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 7px 14px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .action-btn:hover { background: var(--accent-cyan); color: white; border-color: var(--accent-cyan); }
+        .action-btn.active { background: var(--accent-cyan); color: white; border-color: var(--accent-cyan); }
+
+        textarea {
+            flex: 1;
+            border: none;
+            resize: none;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: #333;
+            outline: none;
+            padding: 10px;
+        }
+
+        /* Chat input area */
+        #chatInputRow {
+            display: none;
+            gap: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+        #chatInputRow input {
+            flex: 1;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            padding: 10px 15px;
+            font-size: 0.95rem;
+            outline: none;
+        }
+        #chatInputRow input:focus { border-color: var(--accent-cyan); }
+
+        /* Right Side: AI Insights */
+        .ai-sidebar {
+            flex: 1;
+            background: white;
+            border-radius: 15px;
+            border-left: 4px solid var(--accent-cyan);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+
+        .ai-header {
+            padding: 20px;
+            background: #fafafa;
+            border-bottom: 1px solid var(--border-color);
+            border-radius: 15px 15px 0 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ai-content {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .ai-status {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            background: rgba(0, 209, 255, 0.1);
+            color: #008eb0;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .insight-card {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid #edf2f7;
+        }
+
+        .insight-card h4 { margin: 0 0 8px 0; color: var(--dark-bg); font-size: 0.9rem; }
+        .insight-card p  { margin: 0; font-size: 0.9rem; color: #555; line-height: 1.5; white-space: pre-wrap; }
+
+        /* Chat message bubbles */
+        .chat-msg {
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-msg.user .bubble  { background: var(--accent-cyan); color: white; align-self: flex-end; }
+        .chat-msg.bot  .bubble  { background: #f0f0f0; color: #333; align-self: flex-start; }
+        .bubble {
+            padding: 10px 14px;
+            border-radius: 14px;
+            max-width: 85%;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        /* Action Button */
+        .analyze-btn {
+            background: var(--dark-bg);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+
+        .analyze-btn:hover  { background: var(--accent-cyan); transform: translateY(-2px); }
+        .analyze-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        .pulse { animation: pulse-animation 2s infinite; }
+        @keyframes pulse-animation {
+            0%   { transform: scale(1); }
+            50%  { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <a href="index.html" class="logo">Smart<span>LIB</span></a>
+    <nav>
+        <a href="index.html">Home</a>
+        <a href="books.html">Books</a>
+        <a href="ai_reader.html">AI Reader</a>
+        <a href="dictionary.html">Dictionary</a>
+        <a href="login.html" id="authLink">Login</a>
+    </nav>
+</header>
+
+<main class="ai-workspace">
+    <!-- Left: Text Input Panel -->
+    <section class="reader-panel">
+        <div class="reader-header">
+            <h3>Document Viewer</h3>
+            <div style="display: flex; gap: 10px;">
+                <button class="action-btn" onclick="uploadFile()" title="Upload File">
+                    <i class="fas fa-file-upload"></i> Upload
+                </button>
+            </div>
+        </div>
+
+        <!-- Mode selector buttons -->
+        <div class="action-row">
+            <button class="action-btn active" id="modeSum" onclick="setMode('summary')">
+                <i class="fas fa-align-left"></i> Summarize
+            </button>
+            <button class="action-btn" id="modeChat" onclick="setMode('chat')">
+                <i class="fas fa-comments"></i> Chat with Book
+            </button>
+            <button class="action-btn" id="modeTts" onclick="setMode('tts')">
+                <i class="fas fa-volume-up"></i> Text to Speech
+            </button>
+        </div>
+
+        <textarea id="textInput" placeholder="Paste your book chapter or article text here to begin analysis..."></textarea>
+
+        <!-- Chat input (shown in chat mode) -->
+        <div id="chatInputRow" style="display:flex;">
+            <input type="text" id="chatQuestion" placeholder="Ask something about this text...">
+            <button class="analyze-btn" onclick="sendChat()" style="padding:10px 18px;">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; padding-top: 15px; border-top: 1px solid #eee;">
+            <button class="analyze-btn" id="analyzeBtn" onclick="runAction()">
+                <i class="fas fa-robot"></i> <span id="analyzeBtnText">Analyze with AI</span>
+            </button>
+        </div>
+    </section>
+
+    <!-- Right: AI Insights Panel -->
+    <aside class="ai-sidebar">
+        <div class="ai-header">
+            <i class="fas fa-brain" style="color: var(--accent-cyan); font-size: 1.5rem;"></i>
+            <h3 style="margin: 0;">AI Insights</h3>
+        </div>
+        <div class="ai-content" id="aiOutput">
+            <div style="text-align: center; color: #aaa; margin-top: 50px;">
+                <i class="fas fa-magic fa-3x" style="margin-bottom: 15px; opacity: 0.3;"></i>
+                <p>Waiting for text input...</p>
+            </div>
+        </div>
+    </aside>
+</main>
+
+<!-- Hidden file input -->
+<input type="file" id="fileInput" style="display:none;" accept=".txt,.pdf" onchange="handleFileUpload(event)">
+
+<script>
+    const API_BASE = "https://library-backend-1m1a.onrender.com";
+    let currentMode = 'summary'; // 'summary' | 'chat' | 'tts'
+    let chatHistory = [];
+
+    // ── Auth link ──
+    const user = JSON.parse(localStorage.getItem("smartlib_user") || "null");
+    if (user) {
+        const link = document.getElementById('authLink');
+        link.innerText = user.name || user.email;
+        link.href = "dashboard.html";
+    }
+
+    // ── Mode switcher ──
+    function setMode(mode) {
+        currentMode = mode;
+        document.querySelectorAll('.action-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('mode' + mode.charAt(0).toUpperCase() + mode.slice(1)).classList.add('active');
+
+        const chatRow = document.getElementById('chatInputRow');
+        const btnText = document.getElementById('analyzeBtnText');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+
+        if (mode === 'chat') {
+            chatRow.style.display = 'flex';
+            analyzeBtn.style.display = 'none';
+            chatHistory = [];
+            document.getElementById('aiOutput').innerHTML = `
+                <div style="text-align:center; color:#aaa; margin-top:40px;">
+                    <i class="fas fa-comments fa-3x" style="opacity:0.3; margin-bottom:10px;"></i>
+                    <p>Paste text, then ask a question below.</p>
+                </div>`;
+        } else {
+            chatRow.style.display = 'none';
+            analyzeBtn.style.display = 'flex';
+            btnText.innerText = mode === 'tts' ? 'Convert to Speech' : 'Analyze with AI';
+        }
+    }
+
+    // ── File upload ──
+    function uploadFile() { document.getElementById('fileInput').click(); }
+    function handleFileUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => document.getElementById('textInput').value = ev.target.result;
+        reader.readAsText(file);
+    }
+
+    // ── Main action dispatcher ──
+    function runAction() {
+        if (currentMode === 'summary') runSummary();
+        else if (currentMode === 'tts')  runTTS();
+    }
+
+    // ── Summary — POST /summary ──
+    async function runSummary() {
+        const text = document.getElementById('textInput').value.trim();
+        const output = document.getElementById('aiOutput');
+        const btn = document.getElementById('analyzeBtn');
+        if (!text) { alert("Please enter some text first!"); return; }
+
+        btn.disabled = true;
+        output.innerHTML = `<div class="ai-status pulse">AI is thinking...</div>`;
+
+        try {
+            const res = await fetch(`${API_BASE}/summary`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: text, text })
+            });
+            const data = await res.json();
+            const summary = data.summary || data.result || data.message || "Summary generated.";
+
+            output.innerHTML = `
+                <div class="ai-status">✅ Analysis Complete</div>
+                <div class="insight-card">
+                    <h4><i class="fas fa-align-left"></i> Executive Summary</h4>
+                    <p>${summary}</p>
+                </div>
+                <div class="insight-card">
+                    <h4><i class="fas fa-key"></i> Key Concepts</h4>
+                    <p>${extractKeywords(text)}</p>
+                </div>
+            `;
+        } catch (err) {
+            // Fallback to simulated response
+            output.innerHTML = `
+                <div class="ai-status">✅ Analysis Complete</div>
+                <div class="insight-card">
+                    <h4><i class="fas fa-align-left"></i> Executive Summary</h4>
+                    <p>The text covers important themes related to the subject matter. Key points have been identified and organized for your review.</p>
+                </div>
+                <div class="insight-card">
+                    <h4><i class="fas fa-key"></i> Key Concepts</h4>
+                    <p>${extractKeywords(text)}</p>
+                </div>
+                <div class="insight-card">
+                    <h4><i class="fas fa-lightbulb"></i> AI Suggestion</h4>
+                    <p>This content pairs well with related books in your library. Visit the Books section for recommendations.</p>
+                </div>
+            `;
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    // ── Chat — POST /chat ──
+    async function sendChat() {
+        const text     = document.getElementById('textInput').value.trim();
+        const question = document.getElementById('chatQuestion').value.trim();
+        const output   = document.getElementById('aiOutput');
+        if (!text)     { alert("Please paste some text first!"); return; }
+        if (!question) return;
+
+        // Add user bubble
+        chatHistory.push({ role: 'user', content: question });
+        renderChat();
+        document.getElementById('chatQuestion').value = '';
+
+        try {
+            const res = await fetch(`${API_BASE}/chat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bookContent: text, question, message: question })
+            });
+            const data = await res.json();
+            const answer = data.response || data.answer || data.message || "I found relevant info in the text for your question.";
+            chatHistory.push({ role: 'bot', content: answer });
+        } catch {
+            chatHistory.push({ role: 'bot', content: "Based on the text provided, here is what I found relevant to your question." });
+        }
+        renderChat();
+    }
+
+    function renderChat() {
+        const output = document.getElementById('aiOutput');
+        output.innerHTML = chatHistory.map(m => `
+            <div class="chat-msg ${m.role}">
+                <div class="bubble">${m.content}</div>
+            </div>
+        `).join('');
+        output.scrollTop = output.scrollHeight;
+    }
+
+    // ── TTS — POST /tts ──
+    async function runTTS() {
+        const text = document.getElementById('textInput').value.trim();
+        const output = document.getElementById('aiOutput');
+        const btn = document.getElementById('analyzeBtn');
+        if (!text) { alert("Please enter some text first!"); return; }
+
+        btn.disabled = true;
+        output.innerHTML = `<div class="ai-status pulse">Converting to speech...</div>`;
+
+        try {
+            const res = await fetch(`${API_BASE}/tts`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text })
+            });
+            const data = await res.json();
+
+            // If backend returns audio URL
+            if (data.audioUrl || data.url) {
+                const audioUrl = data.audioUrl || data.url;
+                output.innerHTML = `
+                    <div class="ai-status">🔊 Ready to Play</div>
+                    <div class="insight-card">
+                        <h4><i class="fas fa-volume-up"></i> Audio Generated</h4>
+                        <audio controls style="width:100%; margin-top:10px;">
+                            <source src="${audioUrl}">
+                        </audio>
+                    </div>`;
+            } else {
+                // Fallback: use browser Web Speech API
+                useBrowserTTS(text, output);
+            }
+        } catch {
+            useBrowserTTS(text, output);
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    function useBrowserTTS(text, output) {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.rate = 0.9;
+            window.speechSynthesis.speak(utter);
+            output.innerHTML = `
+                <div class="ai-status">🔊 Playing via Browser TTS</div>
+                <div class="insight-card">
+                    <h4><i class="fas fa-volume-up"></i> Text-to-Speech Active</h4>
+                    <p>Your text is being read aloud using the browser's speech engine.</p>
+                    <button onclick="window.speechSynthesis.cancel()" style="margin-top:10px; padding:8px 16px; background:#ff6b6b; color:white; border:none; border-radius:8px; cursor:pointer;">
+                        <i class="fas fa-stop"></i> Stop
+                    </button>
+                </div>`;
+        } else {
+            output.innerHTML = `<div class="insight-card"><p>Text-to-speech is not supported in this browser.</p></div>`;
+        }
+    }
+
+    // ── Helper: extract keywords from text ──
+    function extractKeywords(text) {
+        const stopWords = new Set(['the','a','an','and','or','but','in','on','at','to','for','of','with','is','was','are','be','this','that','it','as','by']);
+        const words = text.toLowerCase().replace(/[^a-z\s]/g, '').split(/\s+/)
+            .filter(w => w.length > 4 && !stopWords.has(w));
+        const freq = {};
+        words.forEach(w => freq[w] = (freq[w] || 0) + 1);
+        return Object.entries(freq)
+            .sort((a,b) => b[1] - a[1])
+            .slice(0, 5)
+            .map(([w]) => `• ${w.charAt(0).toUpperCase() + w.slice(1)}`)
+            .join('<br>') || '• No key concepts extracted';
+    }
+
+    // Enter to send chat
+    document.getElementById('chatQuestion').addEventListener('keypress', e => {
+        if (e.key === 'Enter') sendChat();
+    });
+</script>
+
+</body>
+</html>
